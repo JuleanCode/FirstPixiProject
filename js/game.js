@@ -1,10 +1,9 @@
-import * as PIXI from 'https://cdn.skypack.dev/pixi.js@v5.3.3';
 import TWEEN from 'https://cdn.skypack.dev/tween.js';
 
-const app = new PIXI.Application({ width: 800, height: 600 });
+let app = new PIXI.Application();
 document.body.appendChild(app.view);
 
-const player = new PIXI.Sprite.from('sprite/player.png');
+let player = PIXI.Sprite.from('sprite/player.png');
 player.anchor.set(0.5);
 player.x = app.screen.width / 2;
 player.y = app.screen.height / 2;
