@@ -1,19 +1,19 @@
 import TWEEN from 'https://cdn.skypack.dev/tween.js';
 
-let app = new PIXI.Application();
+const app = new PIXI.Application();
 document.body.appendChild(app.view);
 
-let player = PIXI.Sprite.from('sprite/player.png');
+const gridSize = 50; // Grootte van elk blokje in de grid
+const borderWidth = 1; // Breedte van de rand
+const speed = 10;
+
+const player = PIXI.Sprite.from('sprite/player.png');
 player.anchor.set(0.5);
-player.x = app.screen.width / 2;
-player.y = app.screen.height / 2;
+player.x = Math.floor(app.screen.width / 2 / gridSize) * gridSize + gridSize / 2; // Midden van het blokje
+player.y = Math.floor(app.screen.height / 2 / gridSize) * gridSize + gridSize / 2; // Midden van het blokje
 app.stage.addChild(player);
 
-let playerX = player.x;
-let playerY = player.y;
-let speed = 10;
-
-const positionText = new PIXI.Text(`X: ${playerX.toFixed(2)}, Y: ${playerY.toFixed(2)}`, {
+const positionText = new PIXI.Text(`X: ${player.x.toFixed(2)}, Y: ${player.y.toFixed(2)}`, {
     fontFamily: 'Arial',
     fontSize: 16,
     fill: 0xFFFFFF,
@@ -22,65 +22,74 @@ positionText.x = 10;
 positionText.y = 10;
 app.stage.addChild(positionText);
 
+const gridGraphics = new PIXI.Graphics();
+app.stage.addChild(gridGraphics);
+
+drawGrid();
+
 window.addEventListener('click', movePlayer);
 window.addEventListener('keydown', handleKeyDown);
-window.addEventListener('keyup', handleKeyUp);
 
 function movePlayer(event) {
-    const targetX = event.clientX - app.view.getBoundingClientRect().left;
-    const targetY = event.clientY - app.view.getBoundingClientRect().top;
+    const targetX = Math.floor((event.clientX - app.view.getBoundingClientRect().left) / gridSize) * gridSize + gridSize / 2;
+    const targetY = Math.floor((event.clientY - app.view.getBoundingClientRect().top) / gridSize) * gridSize + gridSize / 2;
 
-    playerX = targetX;
-    playerY = targetY;
+    positionText.text = `X: ${targetX.toFixed(2)}, Y: ${targetY.toFixed(2)}`;
 
-    positionText.text = `X: ${playerX.toFixed(2)}, Y: ${playerY.toFixed(2)}`;
-
-    moveTo(targetX, targetY, event.shiftKey ? speed * 2 : speed);
+    moveTo(targetX, targetY);
 }
 
 function handleKeyDown(event) {
-    speed = event.shiftKey ? 20 : 10;
+    let targetX = player.x;
+    let targetY = player.y;
 
-    switch (event.key) {
-        case 'ArrowUp':
-        case 'W':
+    switch (event.key.toLowerCase()) {
+        case 'arrowup':
         case 'w':
-            moveTo(player.x, player.y - speed);
+            targetY -= gridSize;
             break;
-        case 'ArrowDown':
-        case 'S':
+        case 'arrowdown':
         case 's':
-            moveTo(player.x, player.y + speed);
+            targetY += gridSize;
             break;
-        case 'ArrowLeft':
-        case 'A':
+        case 'arrowleft':
         case 'a':
-            moveTo(player.x - speed, player.y);
+            targetX -= gridSize;
             break;
-        case 'ArrowRight':
-        case 'D':
+        case 'arrowright':
         case 'd':
-            moveTo(player.x + speed, player.y);
+            targetX += gridSize;
             break;
     }
 
-    playerX = player.x;
-    playerY = player.y;
+    targetX = Math.floor(targetX / gridSize) * gridSize + gridSize / 2;
+    targetY = Math.floor(targetY / gridSize) * gridSize + gridSize / 2;
 
-    positionText.text = `X: ${playerX.toFixed(2)}, Y: ${playerY.toFixed(2)}`;
+    positionText.text = `X: ${targetX.toFixed(2)}, Y: ${targetY.toFixed(2)}`;
+
+    moveTo(targetX, targetY);
 }
 
-function handleKeyUp(event) {
-    if (event.key === 'Shift') {
-        speed = 10;
-    }
-}
-
-function moveTo(targetX, targetY, moveSpeed) {
+function moveTo(targetX, targetY) {
     const tween = new TWEEN.Tween(player)
         .to({ x: targetX, y: targetY }, 500)
         .easing(TWEEN.Easing.Quadratic.Out)
         .start();
+}
+
+function drawGrid() {
+    gridGraphics.clear();
+    gridGraphics.lineStyle(borderWidth, 0xFFFFFF, 1); // Witte randlijnen
+
+    for (let x = 0; x <= app.screen.width; x += gridSize) {
+        gridGraphics.moveTo(x, 0);
+        gridGraphics.lineTo(x, app.screen.height);
+    }
+
+    for (let y = 0; y <= app.screen.height; y += gridSize) {
+        gridGraphics.moveTo(0, y);
+        gridGraphics.lineTo(app.screen.width, y);
+    }
 }
 
 function animate() {
