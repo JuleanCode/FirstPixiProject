@@ -3,8 +3,8 @@ import TWEEN from 'https://cdn.skypack.dev/tween.js';
 const app = new PIXI.Application();
 document.body.appendChild(app.view);
 
-const GRID_SIZE = 50; // Grootte van elk blokje in de grid
-const BORDER_WIDTH = 1; // Breedte van de rand
+const GRID_SIZE = 50;
+const BORDER_WIDTH = 1;
 const SPEED = 10;
 
 const player = PIXI.Sprite.from('sprite/player.png');
@@ -71,6 +71,7 @@ function handleKeyDown(event) {
 function moveTo(targetX, targetY) {
     player.x = targetX;
     player.y = targetY;
+    checkPlayerNearObstacle(player.x, player.y);
 }
 
 function canMoveTo(targetX, targetY) {
@@ -87,9 +88,29 @@ function canMoveTo(targetX, targetY) {
     return true;
 }
 
+function checkPlayerNearObstacle(playerX, playerY) {
+    if (isPlayerNearObstacle(playerX, playerY)) {
+        console.log('Speler is in de buurt van het gele blokje:', playerX, playerY);
+    }
+}
+
+function isPlayerNearObstacle(playerX, playerY) {
+    const obstacleBounds = obstacle.getBounds();
+    const obstacleX = obstacleBounds.x / GRID_SIZE;
+    const obstacleY = obstacleBounds.y / GRID_SIZE;
+
+    const playerGridX = Math.floor(playerX / GRID_SIZE);
+    const playerGridY = Math.floor(playerY / GRID_SIZE);
+
+    const distanceX = Math.abs(playerGridX - obstacleX);
+    const distanceY = Math.abs(playerGridY - obstacleY);
+
+    return (distanceX <= 1 && distanceY <= 1);
+}
+
 function createObstacle() {
     const obstacle = new PIXI.Graphics();
-    obstacle.beginFill(0xFFFF00);
+    obstacle.beginFill(0xFFFF00); // Gele kleur
     obstacle.drawRect(2 * GRID_SIZE, 2 * GRID_SIZE, GRID_SIZE, GRID_SIZE);
     obstacle.endFill();
     return obstacle;
@@ -97,7 +118,7 @@ function createObstacle() {
 
 function drawGrid() {
     gridGraphics.clear();
-    gridGraphics.lineStyle(BORDER_WIDTH, 0xFFFFFF, 1); // Witte randlijnen
+    gridGraphics.lineStyle(BORDER_WIDTH, 0xFFFFFF, 1);
 
     for (let x = 0; x <= app.screen.width; x += GRID_SIZE) {
         gridGraphics.moveTo(x, 0);
