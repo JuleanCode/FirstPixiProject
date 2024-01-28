@@ -5,24 +5,24 @@ document.body.appendChild(app.view);
 
 const GRID_SIZE = 50;
 const BORDER_WIDTH = 1;
-const SPEED = 10;
-const SOUND_TRESHOLD = 0.02
-let speaking_timer = 0
-let player_speaking = false
+const SOUND_THRESHOLD = 0.02;
+let speaking_timer = 0;
+let player_speaking = false;
 
-export const player = PIXI.Sprite.from('sprite/player.png');
+const player = PIXI.Sprite.from('sprite/player.png');
 let player_circle = new PIXI.Graphics();
-let player_container = new PIXI.Graphics();
+let player_container = new PIXI.Container();
 
-app.stage.addChild(player_container);
-player_container.addChild(player)
+app.stage.addChild(player_container);  // Player-container eerst toevoegen
+player_container.addChild(player);
 
-setUpPlayer(player)
-
-export let player_list = []
+const backgroundSprite = PIXI.Sprite.from('sprite/sand_floor.png');
+backgroundSprite.width = app.screen.width;
+backgroundSprite.height = app.screen.height;
+app.stage.addChild(backgroundSprite);  // Achtergrondsprite als eerste toevoegen
 
 const obstacle = createObstacle();
-app.stage.addChild(obstacle);
+app.stage.addChild(obstacle);  // Obstakel als tweede toevoegen
 
 const positionText = new PIXI.Text(`X: ${player.x.toFixed(2)}, Y: ${player.y.toFixed(2)}`, {
     fontFamily: 'Arial',
@@ -145,21 +145,18 @@ function drawGrid() {
 }
 
 function animate() {
-    if(instantMeter.value > SOUND_TRESHOLD && player_speaking !== true)
-    {
-        console.log("There's sound", instantMeter.value)
-        playerSpeaking()
-    }
-    else if (player_speaking === true && speaking_timer < 100) {
-        speaking_timer += 1
-        player_container.removeChild(player_circle)
-        playerSpeaking()
-        console.log("Speaking timer ", speaking_timer)
-    }
-    else {
-        speaking_timer = 0
-        player_speaking = false
-        player_container.removeChild(player_circle)
+    if (instantMeter.value > SOUND_THRESHOLD && player_speaking !== true) {
+        console.log("There's sound", instantMeter.value);
+        playerSpeaking();
+    } else if (player_speaking === true && speaking_timer < 100) {
+        speaking_timer += 1;
+        player_container.removeChild(player_circle);
+        playerSpeaking();
+        console.log("Speaking timer ", speaking_timer);
+    } else {
+        speaking_timer = 0;
+        player_speaking = false;
+        player_container.removeChild(player_circle);
     }
 
     // Bijwerken van de x- en y-positie tekst
@@ -171,17 +168,18 @@ function animate() {
 }
 
 function setUpPlayer(player, pos_x, pos_y) {
-    player.height = GRID_SIZE
-    player.width = GRID_SIZE
+    player.height = GRID_SIZE;
+    player.width = GRID_SIZE;
     player.anchor.set(0.5);
-    if(pos_x && pos_y) {
-        player.x = pos_x
-        player.y = pos_y
+
+    if (pos_x !== undefined && pos_y !== undefined) {
+        player.x = pos_x;
+        player.y = pos_y;
+    } else {
+        player.x = Math.floor(app.screen.width / 2 / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+        player.y = Math.floor(app.screen.height / 2 / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
     }
-    else {
-        player.x = Math.floor(app.screen.width / 2 / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2; // Midden van het blokje
-        player.y = Math.floor(app.screen.height / 2 / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2; // Midden van het blokje
-    }
+
     app.stage.addChild(player);
 }
 
