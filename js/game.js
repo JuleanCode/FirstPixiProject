@@ -161,6 +161,10 @@ function animate() {
         player_speaking = false
         player_container.removeChild(player_circle)
     }
+
+    // Bijwerken van de x- en y-positie tekst
+    positionText.text = `X: ${player.x.toFixed(2)}, Y: ${player.y.toFixed(2)}`;
+
     requestAnimationFrame(animate);
     TWEEN.update();
     app.renderer.render(app.stage);
