@@ -9,33 +9,55 @@ const SOUND_THRESHOLD = 0.02;
 let speaking_timer = 0;
 let player_speaking = false;
 
-const player = PIXI.Sprite.from('sprite/player.png');
-let player_circle = new PIXI.Graphics();
-let player_container = new PIXI.Container();
-
-app.stage.addChild(player_container);  // Player-container eerst toevoegen
-player_container.addChild(player);
-
-const backgroundSprite = PIXI.Sprite.from('sprite/sand_floor.png');
-backgroundSprite.width = app.screen.width;
-backgroundSprite.height = app.screen.height;
-app.stage.addChild(backgroundSprite);  // Achtergrondsprite als eerste toevoegen
-
-const obstacle = createObstacle();
-app.stage.addChild(obstacle);  // Obstakel als tweede toevoegen
-
-const positionText = new PIXI.Text(`X: ${player.x.toFixed(2)}, Y: ${player.y.toFixed(2)}`, {
-    fontFamily: 'Arial',
-    fontSize: 16,
-    fill: 0xFFFFFF,
-});
-positionText.x = 10;
-positionText.y = 10;
-app.stage.addChild(positionText);
-
 const gridGraphics = new PIXI.Graphics();
 app.stage.addChild(gridGraphics);
 
+const obstacles = [];
+
+// Functie om het grid te tekenen
+function drawGrid() {
+    gridGraphics.clear();
+    gridGraphics.lineStyle(BORDER_WIDTH, 0xFFFFFF, 1);
+
+    for (let x = 0; x <= app.screen.width; x += GRID_SIZE) {
+        gridGraphics.moveTo(x, 0);
+        gridGraphics.lineTo(x, app.screen.height);
+    }
+
+    for (let y = 0; y <= app.screen.height; y += GRID_SIZE) {
+        gridGraphics.moveTo(0, y);
+        gridGraphics.lineTo(app.screen.width, y);
+    }
+}
+
+// Functie om een obstakel toe te voegen
+function addObstacle(x, y) {
+    const obstacle = new PIXI.Graphics();
+    obstacle.beginFill(0xFFFF00); // Gele kleur
+    obstacle.drawRect(x, y, GRID_SIZE, GRID_SIZE);
+    obstacle.endFill();
+    app.stage.addChild(obstacle);
+    obstacles.push(obstacle);
+}
+
+// Functie om de speler te tekenen
+function drawPlayer(x, y) {
+    const player = PIXI.Sprite.from('sprite/player.png');
+    player.width = GRID_SIZE;
+    player.height = GRID_SIZE;
+    player.x = x;
+    player.y = y;
+    app.stage.addChild(player);
+    return player;
+}
+
+// Huidige spelerpositie
+let playerX = Math.floor(app.screen.width / 2 / GRID_SIZE) * GRID_SIZE;
+let playerY = Math.floor(app.screen.height / 2 / GRID_SIZE) * GRID_SIZE;
+
+const player = drawPlayer(playerX, playerY);
+
+// Aanvankelijke grid tekenen
 drawGrid();
 
 window.addEventListener('click', handleClick);
@@ -44,12 +66,23 @@ window.addEventListener('keydown', handleKeyDown);
 const instantMeter = document.querySelector('#instant meter');
 
 function handleClick(event) {
-    const targetX = Math.floor((event.clientX - app.view.getBoundingClientRect().left) / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
-    const targetY = Math.floor((event.clientY - app.view.getBoundingClientRect().top) / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
+    const targetX = Math.floor((event.clientX - app.view.getBoundingClientRect().left) / GRID_SIZE) * GRID_SIZE;
+    const targetY = Math.floor((event.clientY - app.view.getBoundingClientRect().top) / GRID_SIZE) * GRID_SIZE;
 
-    positionText.text = `X: ${targetX.toFixed(2)}, Y: ${targetY.toFixed(2)}`;
     if (canMoveTo(targetX, targetY)) {
-        moveTo(targetX, targetY);
+        // Verwijder het obstakel van de huidige spelerpositie
+        const obstacleIndex = obstacles.findIndex(obstacle => obstacle.x === playerX && obstacle.y === playerY);
+        if (obstacleIndex !== -1) {
+            app.stage.removeChild(obstacles[obstacleIndex]);
+            obstacles.splice(obstacleIndex, 1);
+        }
+
+        // Verplaats de speler
+        player.x = targetX;
+        player.y = targetY;
+
+        // Voeg een obstakel toe op de nieuwe spelerpositie
+        addObstacle(targetX, targetY);
     }
 }
 
@@ -77,14 +110,20 @@ function handleKeyDown(event) {
     }
 
     if (canMoveTo(targetX, targetY)) {
-        moveTo(targetX, targetY);
-    }
-}
+        // Verwijder het obstakel van de huidige spelerpositie
+        const obstacleIndex = obstacles.findIndex(obstacle => obstacle.x === playerX && obstacle.y === playerY);
+        if (obstacleIndex !== -1) {
+            app.stage.removeChild(obstacles[obstacleIndex]);
+            obstacles.splice(obstacleIndex, 1);
+        }
 
-function moveTo(targetX, targetY) {
-    player.x = targetX;
-    player.y = targetY;
-    checkPlayerNearObstacle(player.x, player.y);
+        // Verplaats de speler
+        player.x = targetX;
+        player.y = targetY;
+
+        // Voeg een obstakel toe op de nieuwe spelerpositie
+        addObstacle(targetX, targetY);
+    }
 }
 
 function canMoveTo(targetX, targetY) {
@@ -92,110 +131,16 @@ function canMoveTo(targetX, targetY) {
         return false;
     }
 
-    const obstacleBounds = obstacle.getBounds();
-    if (targetX > obstacleBounds.x && targetX < obstacleBounds.x + obstacleBounds.width &&
-        targetY > obstacleBounds.y && targetY < obstacleBounds.y + obstacleBounds.height) {
-        return false;
-    }
-
-    return true;
-}
-
-function checkPlayerNearObstacle(playerX, playerY) {
-    if (isPlayerNearObstacle(playerX, playerY)) {
-        console.log('Speler is in de buurt van het gele blokje:', playerX, playerY);
-    }
-}
-
-function isPlayerNearObstacle(playerX, playerY) {
-    const obstacleBounds = obstacle.getBounds();
-    const obstacleX = obstacleBounds.x / GRID_SIZE;
-    const obstacleY = obstacleBounds.y / GRID_SIZE;
-
-    const playerGridX = Math.floor(playerX / GRID_SIZE);
-    const playerGridY = Math.floor(playerY / GRID_SIZE);
-
-    const distanceX = Math.abs(playerGridX - obstacleX);
-    const distanceY = Math.abs(playerGridY - obstacleY);
-
-    return (distanceX <= 1 && distanceY <= 1);
-}
-
-function createObstacle() {
-    const obstacle = new PIXI.Graphics();
-    obstacle.beginFill(0xFFFF00); // Gele kleur
-    obstacle.drawRect(2 * GRID_SIZE, 2 * GRID_SIZE, GRID_SIZE, GRID_SIZE);
-    obstacle.endFill();
-    return obstacle;
-}
-
-function drawGrid() {
-    gridGraphics.clear();
-    gridGraphics.lineStyle(BORDER_WIDTH, 0xFFFFFF, 1);
-
-    for (let x = 0; x <= app.screen.width; x += GRID_SIZE) {
-        gridGraphics.moveTo(x, 0);
-        gridGraphics.lineTo(x, app.screen.height);
-    }
-
-    for (let y = 0; y <= app.screen.height; y += GRID_SIZE) {
-        gridGraphics.moveTo(0, y);
-        gridGraphics.lineTo(app.screen.width, y);
-    }
+    // Controleer of de nieuwe positie bezet is door een ander obstakel
+    return !obstacles.some(obstacle => obstacle.x === targetX && obstacle.y === targetY);
 }
 
 function animate() {
-    if (instantMeter.value > SOUND_THRESHOLD && player_speaking !== true) {
-        console.log("There's sound", instantMeter.value);
-        playerSpeaking();
-    } else if (player_speaking === true && speaking_timer < 100) {
-        speaking_timer += 1;
-        player_container.removeChild(player_circle);
-        playerSpeaking();
-        console.log("Speaking timer ", speaking_timer);
-    } else {
-        speaking_timer = 0;
-        player_speaking = false;
-        player_container.removeChild(player_circle);
-    }
-
-    // Bijwerken van de x- en y-positie tekst
-    positionText.text = `X: ${player.x.toFixed(2)}, Y: ${player.y.toFixed(2)}`;
+    // Voeg hier je animatielogica toe, zoals het controleren van geluid, enz.
 
     requestAnimationFrame(animate);
     TWEEN.update();
     app.renderer.render(app.stage);
-}
-
-function setUpPlayer(player, pos_x, pos_y) {
-    player.height = GRID_SIZE;
-    player.width = GRID_SIZE;
-    player.anchor.set(0.5);
-
-    if (pos_x !== undefined && pos_y !== undefined) {
-        player.x = pos_x;
-        player.y = pos_y;
-    } else {
-        player.x = Math.floor(app.screen.width / 2 / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
-        player.y = Math.floor(app.screen.height / 2 / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2;
-    }
-
-    app.stage.addChild(player);
-}
-
-function playerSpeaking() {
-    player_circle = new PIXI.Graphics();
-    player_circle.beginFill(0xff0000);
-    player_circle.drawCircle(player.x, player.y, 50);
-    player_container.addChild(player_circle)
-    player_speaking = true;
-}
-
-export function createPlayer(uuid, pos_x, pos_y) {
-    let new_player = PIXI.Sprite.from('sprite/player.png');
-    setUpPlayer(new_player, pos_x, pos_y)
-    player_list[uuid] = new_player
-    return new_player
 }
 
 animate();
