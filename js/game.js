@@ -1,4 +1,5 @@
 import TWEEN from 'https://cdn.skypack.dev/tween.js';
+import { socket, UUID } from "./player.js";
 
 const app = new PIXI.Application();
 document.body.appendChild(app.view);
@@ -9,17 +10,21 @@ const SOUND_THRESHOLD = 0.02;
 let speaking_timer = 0;
 let player_speaking = false;
 
-const player = PIXI.Sprite.from('sprite/player.png');
+export const player = PIXI.Sprite.from('sprite/player.png');
 let player_circle = new PIXI.Graphics();
 let player_container = new PIXI.Container();
 
 app.stage.addChild(player_container);  // Player-container eerst toevoegen
 player_container.addChild(player);
 
+setUpPlayer(player)
+
+export let player_list = []
+
 const backgroundSprite = PIXI.Sprite.from('sprite/sand_floor.png');
 backgroundSprite.width = app.screen.width;
 backgroundSprite.height = app.screen.height;
-app.stage.addChild(backgroundSprite);  // Achtergrondsprite als eerste toevoegen
+// app.stage.addChild(backgroundSprite);  // Achtergrondsprite als eerste toevoegen
 
 const obstacle = createObstacle();
 app.stage.addChild(obstacle);  // Obstakel als tweede toevoegen
@@ -85,6 +90,7 @@ function moveTo(targetX, targetY) {
     player.x = targetX;
     player.y = targetY;
     checkPlayerNearObstacle(player.x, player.y);
+    socket.send("P," + UUID + "," + player.x + "," + player.y);
 }
 
 function canMoveTo(targetX, targetY) {

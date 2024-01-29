@@ -2,7 +2,7 @@ import { player, player_list, createPlayer } from "./game.js"
 
 export const UUID = generateUUID();
 console.log('Generated UUID:', UUID);
-export let socket = new WebSocket("ws://192.168.43.164:6969");
+export let socket = new WebSocket("ws://127.0.0.1:6969");
 
 // Event listener for when the connection is opened
 socket.addEventListener("open", (event) => {
